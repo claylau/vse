@@ -10,18 +10,20 @@ from PyQt5.QtGui import (
 
 
 class ParamWidget(QWidget):
-    """Paramters Widget, supported mode (desktop, file, url)"""
+    """Paramters Widget"""
     def __init__(self, parent=None):
         super().__init__(parent)
         # model select
         modeLayout = QHBoxLayout()
         self.btn1 = QRadioButton("桌面")
         self.btn1.setChecked(True)
-        self.btn2 = QRadioButton("文件")
+        self.btn2 = QRadioButton("视频")
         self.btn3 = QRadioButton("网络")
+        self.btn4 = QRadioButton("图片")
         modeLayout.addWidget(self.btn1)
         modeLayout.addWidget(self.btn2)
         modeLayout.addWidget(self.btn3)
+        modeLayout.addWidget(self.btn4)
         # file select
         fileLayout = QHBoxLayout()
         self.openBtn = QPushButton("打开")
@@ -46,36 +48,38 @@ class ParamWidget(QWidget):
         if self.btn1.isChecked():
             QMessageBox.information(self, "提示", "桌面模式下不需要选择视频文件")
         elif self.btn2.isChecked():
-            fname, _ = QFileDialog.getOpenFileName(self, '打开文件', os.path.expanduser('~'), "Video file (*.mp4)")
+            fname, _ = QFileDialog.getOpenFileName(self, '打开视频文件', os.path.expanduser('~'), "Video file (*.mp4)")
             self.filenameEdit.setText(fname)
         elif self.btn3.isChecked():
             QMessageBox.information(self, "提示", "网络模式暂时没有实现")
+        elif self.btn4.isChecked():
+            fname, _ = QFileDialog.getOpenFileName(self, '打开图片文件', os.path.expanduser('~'), "Image file (*.jpg *.png)")
+            self.filenameEdit.setText(fname)
 
     def getMode(self):
         if self.btn1.isChecked():
             return "desktop"
         elif self.btn2.isChecked():
-            return "file"
+            return "video"
         elif self.btn3.isChecked():
             return "url"
+        elif self.btn4.isChecked():
+            return "image"
     
     def getFilename(self):
-        return self.filenameEdit.text()
+        return None if len(self.filenameEdit.text()) == 0 else self.filenameEdit.text()
     
     def getIntervalTime(self):
         return float(self.intervalTime.text())
 
     def getParams(self):
         params = {
-            "video_filename": None,
+            "filename": None,
             "interval": 1,
             "isRunning": True
         }
         params["mode"] = self.getMode()
-        if len(self.getFilename()) == 0:
-            params["video_filename"] = None
-        else:
-            params["video_filename"] = self.getFilename()
+        params["filename"] = self.getFilename()
         params["interval"] = self.getIntervalTime()
         return params
 

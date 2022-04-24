@@ -9,6 +9,8 @@ from PyQt5.QtCore import QThread
 
 from utils import *
 
+import os.path
+USERDIR = os.path.expanduser('~')
 
 class OcrThread(QThread):
     def __init__(self):
@@ -17,34 +19,44 @@ class OcrThread(QThread):
         self.last_subtitle = "Starting 开始"
         self.capture_window = Box()
         self.ocr = PaddleOCR(
-            det_model_dir=r"~\.paddleocr\whl\det\ch\ch_PP-OCRv2_det_infer",
-            cls_model_dir=r"~\.paddleocr\whl\cls\ch_ppocr_mobile_v2.0_cls_infer",
-            rec_model_dir=r"~\.paddleocr\whl\rec\ch\ch_PP-OCRv2_rec_infer",
+            det_model_dir=USERDIR+"/.paddleocr/whl/det/ch/ch_PP-OCRv2_det_infer",
+            cls_model_dir=USERDIR+"/.paddleocr/whl/cls/ch_ppocr_mobile_v2.0_cls_infer",
+            rec_model_dir=USERDIR+"/.paddleocr/whl/rec/ch/ch_PP-OCRv2_rec_infer",
             use_angle_cls=True, lang='ch', show_log=False)
         self.mode = "desktop"
         self.interval = 1.0
         self.isRunning = False
         self.isPaused = False
         self.fout = sys.stdout
-        self.video_filename = None
+        self.filename = None
     
     def onUpdateParam(self, param):
         for k, v in param.items():
-            assert k in ("isRunning", "isPaused", "mode", "interval", "video_filename")
+            assert k in ("isRunning", "isPaused", "mode", "interval", "filename")
             self.__setattr__(k, v)
     
-    def extract_video_subtitles(self):
+    def extract_subtitles(self):
         if self.mode == "desktop":
             self.capture_window = set_screen_window()
             self.extract_desktop_video_subtitles()
-        elif self.mode == "file":
-            self.capture_window = set_video_window(self.video_filename)
+        elif self.mode == "video":
+            self.capture_window = set_video_window(self.filename)
             self.extract_offline_video_subtitles()
+        elif self.mode == "image":
+            self.extract_offline_image_subtitles()
         else:
             print(f"{self.mode} not be impletmented yet.")
+    
+    def extract_offline_image_subtitles(self):
+        res = self.ocr.ocr(self.filename, cls=True)
+        subtitles = []
+        for line in res:
+            subtitles.append(line[1][0])
+        subtitles_str = " ".join(subtitles)
+        print(subtitles_str, file=self.fout)
 
     def extract_offline_video_subtitles(self):
-        cap = cv2.VideoCapture(self.video_filename)
+        cap = cv2.VideoCapture(self.filename)
         cap_fps = cap.get(cv2.CAP_PROP_FPS)
         frame_count = 0
         x1, y1, x2, y2 = self.capture_window.to_tlbr()
@@ -94,4 +106,4 @@ class OcrThread(QThread):
         self.last_subtitle = subtitles_str
 
     def run(self):
-        self.extract_video_subtitles()
+        self.extract_subtitles()

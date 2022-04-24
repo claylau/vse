@@ -20,7 +20,7 @@ class MainWindow(QMainWindow):
 
     def initUI(self):
         self.setWindowTitle("Video Subtitles Extractor (VSE)")
-        self.setWindowIcon(QIcon('./ocr.svg'))
+        self.setWindowIcon(QIcon('../asserts/img/icon.svg'))
         self.resize(648, 480)
 
         self.paramWidget = ParamWidget()
@@ -49,15 +49,16 @@ class MainWindow(QMainWindow):
     def start(self):
         if self.startBtn.text() == "开始":
             params = self.paramWidget.getParams()
-            if params["mode"] == "file" and params["video_filename"] is None:
-                QMessageBox.information(self, "提示", "文件模式下需要选择视频文件")
+            if (params["mode"] == "video" or params["mode"] == "image")and params["filename"] is None:
+                QMessageBox.information(self, "提示", "需要选择文件")
                 return
             if params["mode"] == "url":
                 QMessageBox.information(self, "提示", "网络模式暂时没有实现")
                 return
             self.paramSingal.send(params)
             self.subtitleWidget.textWidget.clear()
-            self.startBtn.setText("停止")
+            if params["mode"] != "image":
+                self.startBtn.setText("停止")
             self.ocrEngine.start()
         else:
             params = {"isRunning": False, "isPaused": False}
