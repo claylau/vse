@@ -1,6 +1,6 @@
 import os.path
 from PyQt5.QtWidgets import (
-    QWidget, QHBoxLayout,
+    QWidget, QHBoxLayout, QComboBox,
     QRadioButton, QPushButton, QLineEdit, QVBoxLayout,
     QFileDialog, QMessageBox, QTextEdit, QFormLayout
 )
@@ -37,18 +37,21 @@ class ParamWidget(QWidget):
         self.intervalTime.setText("1.0")
         self.intervalTime.setValidator(QDoubleValidator(0.99, 99.99, 2))
         paramLayout.addRow("间隔时间（秒）", self.intervalTime)
+        self.lang = QComboBox()
+        self.lang.addItems(["中文", "英文", "中英"])
 
         layout1 = QVBoxLayout()
         layout1.addLayout(modeLayout)
         layout1.addLayout(fileLayout)
         layout1.addLayout(paramLayout)
+        layout1.addWidget(self.lang)
         self.setLayout(layout1)
     
     def getFile(self):
         if self.btn1.isChecked():
             QMessageBox.information(self, "提示", "桌面模式下不需要选择视频文件")
         elif self.btn2.isChecked():
-            fname, _ = QFileDialog.getOpenFileName(self, '打开视频文件', os.path.expanduser('~'), "Video file (*.mp4)")
+            fname, _ = QFileDialog.getOpenFileName(self, '打开视频文件', os.path.expanduser('~'), "Video file (*.mp4 *.mkv)")
             self.filenameEdit.setText(fname)
         elif self.btn3.isChecked():
             QMessageBox.information(self, "提示", "网络模式暂时没有实现")
@@ -71,6 +74,15 @@ class ParamWidget(QWidget):
     
     def getIntervalTime(self):
         return float(self.intervalTime.text())
+    
+    def getLang(self):
+        ind = self.lang.currentIndex()
+        if ind == 0:
+            return ["zh"]
+        elif ind == 1:
+            return ["en"]
+        else:
+            return ["zh", "en"]
 
     def getParams(self):
         params = {
@@ -81,6 +93,7 @@ class ParamWidget(QWidget):
         params["mode"] = self.getMode()
         params["filename"] = self.getFilename()
         params["interval"] = self.getIntervalTime()
+        params["lang"] = self.getLang()
         return params
 
 

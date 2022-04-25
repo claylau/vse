@@ -6,6 +6,7 @@ from PIL import ImageGrab
 import numpy as np
 import Levenshtein
 from PyQt5.QtCore import QThread
+import langid
 
 from utils import *
 
@@ -29,10 +30,11 @@ class OcrThread(QThread):
         self.isPaused = False
         self.fout = sys.stdout
         self.filename = None
+        self.lang = []
     
     def onUpdateParam(self, param):
         for k, v in param.items():
-            assert k in ("isRunning", "isPaused", "mode", "interval", "filename")
+            assert k in ("isRunning", "isPaused", "mode", "interval", "filename", "lang")
             self.__setattr__(k, v)
     
     def extract_subtitles(self):
@@ -56,6 +58,8 @@ class OcrThread(QThread):
         print(subtitles_str, file=self.fout)
 
     def extract_offline_video_subtitles(self):
+        if not self.capture_window:
+            return 
         cap = cv2.VideoCapture(self.filename)
         cap_fps = cap.get(cv2.CAP_PROP_FPS)
         frame_count = 0
@@ -80,7 +84,8 @@ class OcrThread(QThread):
         cap.release()
 
     def extract_desktop_video_subtitles(self):
-        assert self.capture_window
+        if not self.capture_window:
+            return
         box = self.capture_window.to_tlbr()
         while True:
             if not self.isRunning:
@@ -98,7 +103,10 @@ class OcrThread(QThread):
         res = self.ocr.ocr(img, cls=True)
         subtitles = []
         for line in res:
-            subtitles.append(line[1][0])
+            txt = line[1][0]
+            lang_type = langid.classify(txt)[0]
+            if lang_type in self.lang:
+                subtitles.append(txt)
         subtitles_str = " ".join(subtitles)
         similarity = Levenshtein.ratio(self.last_subtitle, subtitles_str)
         if similarity < 0.7:
