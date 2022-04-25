@@ -1,6 +1,6 @@
 import sys
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import (
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import (
     QApplication, QWidget, QMainWindow, QHBoxLayout,
     QPushButton, QVBoxLayout, QMessageBox,
 )
@@ -14,9 +14,12 @@ class MainWindow(QMainWindow):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.initUI()
-        sys.stdout = Stream(newText=self.subtitleWidget.onUpdateText)
+        outStream = Stream()
+        outStream.newText.connect(self.subtitleWidget.onUpdateText)
+        sys.stdout = outStream
         self.ocrEngine = OcrThread()
-        self.paramSingal = ParamSignal(paramChanged=self.ocrEngine.onUpdateParam)
+        self.paramSingal = ParamSignal()
+        self.paramSingal.paramChanged.connect(self.ocrEngine.onUpdateParam)
 
     def initUI(self):
         self.setWindowTitle("Video Subtitles Extractor (VSE)")

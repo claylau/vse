@@ -1,20 +1,20 @@
-from PyQt5.QtCore import (
-    QObject, pyqtSignal
+from PySide6.QtCore import (
+    QObject, Signal
 )
-from PyQt5.QtWidgets import QApplication
 
 
 class Stream(QObject):
-    newText = pyqtSignal(str)
+    newText = Signal(str)
 
     def write(self, text):
         self.newText.emit(str(text))
-        QApplication.processEvents()
+    
+    def flush(self):
+        pass
 
 
 class ParamSignal(QObject):
-    paramChanged = pyqtSignal(dict)
+    paramChanged = Signal(dict)
 
     def send(self, params):
         self.paramChanged.emit(params)
-        QApplication.processEvents()

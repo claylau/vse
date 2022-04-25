@@ -1,10 +1,10 @@
 import os.path
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QWidget, QHBoxLayout, QComboBox,
     QRadioButton, QPushButton, QLineEdit, QVBoxLayout,
     QFileDialog, QMessageBox, QTextEdit, QFormLayout
 )
-from PyQt5.QtGui import (
+from PySide6.QtGui import (
     QDoubleValidator, QTextCursor
 )
 
