@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
 )
 from utils import *
 from signals import *
-from ocr_tool import *
+from ocr import *
 from widgets import *
 
 
@@ -20,10 +20,11 @@ class MainWindow(QMainWindow):
         self.ocrEngine = OcrThread()
         self.paramSingal = ParamSignal()
         self.paramSingal.paramChanged.connect(self.ocrEngine.onUpdateParam)
+        self.ocrEngine.progressSignal.connect(self.subtitleWidget.progressBar.setValue)
 
     def initUI(self):
         self.setWindowTitle("Video Subtitles Extractor (VSE)")
-        self.setWindowIcon(QIcon('../asserts/img/icon.svg'))
+        self.setWindowIcon(QIcon('../asserts/img/icon.png'))
         self.resize(648, 480)
 
         self.paramWidget = ParamWidget()
@@ -47,12 +48,13 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         sys.stdout = sys.__stdout__
+        self.ocrEngine.exit()
         super().closeEvent(event)
         
     def start(self):
         if self.startBtn.text() == "开始":
             params = self.paramWidget.getParams()
-            if (params["mode"] == "video" or params["mode"] == "image")and params["filename"] is None:
+            if (params["mode"] == "video" or params["mode"] == "image") and params["filename"] is None:
                 QMessageBox.information(self, "提示", "需要选择文件")
                 return
             if params["mode"] == "url":

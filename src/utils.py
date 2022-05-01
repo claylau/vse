@@ -1,6 +1,8 @@
+import os
 import numpy as np
 import cv2
 from PIL import ImageGrab
+import re
 
 
 class Box:
@@ -75,6 +77,8 @@ def set_video_window(video_filename):
             break
         cv2.imshow(window_name, img)
         key = cv2.waitKey(1)
+        if key == 27:
+            break
         if key == ord('s'):
             cv2.setMouseCallback(window_name, 
                 mouse_draw_rectangle, 
@@ -85,3 +89,36 @@ def set_video_window(video_filename):
     cap.release()
     cv2.destroyWindow(window_name)
     return box
+
+def clean_srt_subtitle(filename):
+    # lineIndexPattern = re.compile('^\d+$')
+    timestampPattern = re.compile('-->') #(00:02:12,940 --> 00:02:16,790)
+    subtitlePattern = re.compile('^<.*>$')
+    tempFilename = filename.replace('.srt', '.txt')
+    if os.path.exists(tempFilename):
+        os.remove(tempFilename)
+    fout = open(tempFilename, 'w', encoding='utf-8')
+    def remove_html_tags(string):
+        data = string.replace(string[string.find("<"):string.find(">") + 1], '').strip()
+        if ">" in data or "<" in data:
+            return remove_html_tags(data)
+        else:
+            return str(data)
+    lasTimestamp = ""
+    with open(filename, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            # matched = lineIndexPattern.match(line)
+            if timestampPattern.search(line):
+                lasTimestamp = line
+                continue
+            matched = subtitlePattern.match(line)
+            if matched:
+                line = remove_html_tags(line)
+                print(lasTimestamp, line, file=fout, sep='    ')
+    fout.close()
+    return tempFilename
+
+
+if __name__ == '__main__':
+    clean_srt_subtitle("tempSubtitle.srt")

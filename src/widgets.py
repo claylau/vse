@@ -2,7 +2,8 @@ import os.path
 from PySide6.QtWidgets import (
     QWidget, QHBoxLayout, QComboBox,
     QRadioButton, QPushButton, QLineEdit, QVBoxLayout,
-    QFileDialog, QMessageBox, QTextEdit, QFormLayout
+    QFileDialog, QMessageBox, QTextEdit, QFormLayout,
+    QProgressBar
 )
 from PySide6.QtGui import (
     QDoubleValidator, QTextCursor
@@ -51,7 +52,7 @@ class ParamWidget(QWidget):
         if self.btn1.isChecked():
             QMessageBox.information(self, "提示", "桌面模式下不需要选择视频文件")
         elif self.btn2.isChecked():
-            fname, _ = QFileDialog.getOpenFileName(self, '打开视频文件', os.path.expanduser('~'), "Video file (*.mp4 *.mkv)")
+            fname, _ = QFileDialog.getOpenFileName(self, '打开视频文件', os.path.expanduser('~'), "Video file (*.mp4 *.mkv *.flv)")
             self.filenameEdit.setText(fname)
         elif self.btn3.isChecked():
             QMessageBox.information(self, "提示", "网络模式暂时没有实现")
@@ -100,7 +101,6 @@ class ParamWidget(QWidget):
 class SubtitleWidget(QWidget):
     def __init__(self):
         super().__init__()
-        layout = QVBoxLayout()
         self.textWidget = QTextEdit(readOnly=True)
         self.textWidget.setPlainText("subtitles")
         hLayout2 = QHBoxLayout()
@@ -109,6 +109,10 @@ class SubtitleWidget(QWidget):
         self.filenameEdit = QLineEdit()
         hLayout2.addWidget(self.saveBtn)
         hLayout2.addWidget(self.filenameEdit)
+        layout = QVBoxLayout()
+        self.progressBar = QProgressBar()
+        self.progressBar.setRange(0, 100)
+        layout.addWidget(self.progressBar)
         layout.addWidget(self.textWidget)
         layout.addLayout(hLayout2)
         self.setLayout(layout)

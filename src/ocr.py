@@ -1,3 +1,4 @@
+import os
 import time
 from paddleocr import PaddleOCR
 import cv2
@@ -5,7 +6,7 @@ import sys
 from PIL import ImageGrab
 import numpy as np
 import Levenshtein
-from PyQt5.QtCore import QThread
+from PySide6.QtCore import QThread, Signal
 import langid
 
 from utils import *
@@ -13,7 +14,9 @@ from utils import *
 import os.path
 USERDIR = os.path.expanduser('~')
 
+
 class OcrThread(QThread):
+    progressSignal = Signal(int)
     def __init__(self):
         super().__init__()
         self.img = None
@@ -39,15 +42,31 @@ class OcrThread(QThread):
     
     def extract_subtitles(self):
         if self.mode == "desktop":
-            self.capture_window = set_screen_window()
             self.extract_desktop_video_subtitles()
         elif self.mode == "video":
-            self.capture_window = set_video_window(self.filename)
             self.extract_offline_video_subtitles()
         elif self.mode == "image":
             self.extract_offline_image_subtitles()
         else:
             print(f"{self.mode} not be impletmented yet.")
+    
+    def extract_with_ffmpeg(self):
+        filename = self.filename
+        tempFilename = "tempSubtitle.srt"
+        if os.path.exists(tempFilename):
+            os.remove(tempFilename)
+        cmd = f"ffmpeg -i {filename} {tempFilename}"
+        try:
+            ret = os.system(cmd)
+            if ret == 0:
+                newTempFilename = clean_srt_subtitle(tempFilename)
+                os.remove(tempFilename)
+                with open(newTempFilename, 'r', encoding='utf-8') as f:
+                    print(f.read(), file=self.fout)
+                os.remove(newTempFilename)
+            return ret
+        except: 
+            return -1
     
     def extract_offline_image_subtitles(self):
         res = self.ocr.ocr(self.filename, cls=True)
@@ -58,10 +77,15 @@ class OcrThread(QThread):
         print(subtitles_str, file=self.fout)
 
     def extract_offline_video_subtitles(self):
+        ret = self.extract_with_ffmpeg()
+        if ret == 0:
+            return
+        self.capture_window = set_video_window(self.filename)
         if not self.capture_window:
             return 
         cap = cv2.VideoCapture(self.filename)
         cap_fps = cap.get(cv2.CAP_PROP_FPS)
+        cap_frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
         frame_count = 0
         x1, y1, x2, y2 = self.capture_window.to_tlbr()
         frame_interval = int(self.interval * cap_fps)
@@ -75,15 +99,14 @@ class OcrThread(QThread):
             if not ret:
                 break
             frame_count += 1
+            self.progressSignal.emit(int(frame_count / cap_frame_count))
             if frame_count % frame_interval == 0:
-                frame_count = 0
-                if self.capture_window:
-                    cap_img = self.img[y1:y2, x1:x2]
-                    self.do_ocr(cap_img)
-                else: break
+                cap_img = self.img[y1:y2, x1:x2]
+                self.do_ocr(cap_img)
         cap.release()
 
     def extract_desktop_video_subtitles(self):
+        self.capture_window = set_screen_window()
         if not self.capture_window:
             return
         box = self.capture_window.to_tlbr()
